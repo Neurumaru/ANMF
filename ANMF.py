@@ -12,6 +12,7 @@ from DataLoader import load_c_matrix, load_matrix, load_rating_file_as_list, loa
     load_negative_file
 from Model import get_model, compile_model, fit_model_one_epoch
 from Dataset import get_dataset
+from evaluate import predict_model
 
 num_factors = 256
 num_negatives = 10
@@ -30,6 +31,14 @@ def load_train():
     print(f'Start loading train.rating')
     result = load_rating_file_as_list('Data\\train.rating')
     print(f'End loading train.rating | TOTAL:{time() - st:.2f}s')
+    return result
+
+
+def load_test():
+    st = time()
+    print(f'Start loading test.rating')
+    result = load_rating_file_as_list('Data\\test.rating')
+    print(f'End loading test.rating | TOTAL:{time() - st:.2f}s')
     return result
 
 
@@ -77,20 +86,22 @@ if __name__ == '__main__':
     print(f'==================== Dataset ====================')
     print()
 
-    pool = Pool(6)
+    pool = Pool(7)
     train = pool.apply_async(load_train)
+    test = pool.apply_async(load_test)
     neg_sample = pool.apply_async(load_negative)
     uSimMat = pool.apply_async(load_drug_sim)
     iSimMat = pool.apply_async(load_disease_sim)
     DiDrAMat = pool.apply_async(load_didra)
-    GT = pool.apply_async(load_gt)
+    # GT = pool.apply_async(load_gt)
 
     train = train.get()
+    test = test.get()
     neg_sample = neg_sample.get()
     uSimMat = uSimMat.get()
     iSimMat = iSimMat.get()
     DiDrAMat = DiDrAMat.get()
-    GT = GT.get()
+    # GT = GT.get()
 
     pool.close()
     pool.join()
@@ -100,11 +111,12 @@ if __name__ == '__main__':
     print(f'==================== Summary ====================')
     print()
     print(f'train: {len(train)}')
+    print(f'test: {len(test)}')
     print(f'negative: {len(neg_sample)}')
     print(f'DrugSim: {len(uSimMat)}')
     print(f'DiseaseSim: {len(iSimMat)}')
     print(f'DiDrA: {DiDrAMat.shape}')
-    print(f'GT: {GT.shape}')
+    # print(f'GT: {GT.shape}')
     print()
     print()
     print(f'==================== Model ====================')
@@ -118,7 +130,7 @@ if __name__ == '__main__':
     print(f'==================== Train ====================')
     print()
     start_time = time()
-    for epoch in range(epochs):
+    for epoch in range(0):
         epoch_time = time()
         print(f'========== Epoch {epoch} ==========')
         print()
@@ -131,4 +143,7 @@ if __name__ == '__main__':
         print()
         gc.collect()
         tf.keras.backend.clear_session()
+
+    print(f'==================== Evaluate ====================')
+    predict = predict_model(model, test, uSimMat, iSimMat, DiDrAMat)
 
