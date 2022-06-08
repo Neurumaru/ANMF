@@ -14,7 +14,7 @@ def predict_model(model, test, uSimMat, iSimMat, DiDrAMat, batch_size=1024, verb
     result = list()
 
     start_time = time()
-    print(f'Start generating evaluate dataset.txt')
+    print(f'Predict using model')
     for idx, (u, i, r) in enumerate(test):
         if verbose != 0 and idx % verbose == 0:
             progress(idx, len(test), start_time, (u, i))
@@ -48,4 +48,5 @@ def predict_model(model, test, uSimMat, iSimMat, DiDrAMat, batch_size=1024, verb
         result.extend(predict)
 
     progressEnd(len(test), start_time)
-    return result
+    u, i, r = zip(*test)
+    return list(zip(u, i, np.array(result).reshape(-1)))

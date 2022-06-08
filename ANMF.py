@@ -5,6 +5,7 @@ Created on Fri Sep 14 15:35:04 2018
 @author: Administrator
 """
 import gc
+import pickle
 import tensorflow as tf
 from multiprocessing.pool import Pool
 from time import time
@@ -13,6 +14,7 @@ from DataLoader import load_c_matrix, load_matrix, load_rating_file_as_list, loa
 from Model import get_model, compile_model, fit_model_one_epoch
 from Dataset import get_dataset
 from evaluate import predict_model
+from progress import progress, progressEnd
 
 num_factors = 256
 num_negatives = 10
@@ -74,12 +76,15 @@ def load_didra():
     return result
 
 
-def load_gt():
+def load_dictionary():
     st = time()
-    print(f'Start loading GT.txt')
-    result = load_matrix('Data\\GT.txt')
-    print(f'End loading GT.txt | TOTAL:{time() - st:.2f}s')
-    return result
+    print(f'Start loading drug_I2S.pickle and disease_I2S.pickle')
+    with open('Data/drug_I2S.pickle', 'rb') as f:
+        drug_I2S = pickle.load(f)
+    with open('Data/disease_I2S.pickle', 'rb') as f:
+        disease_I2S = pickle.load(f)
+    print(f'End loading drug_I2S.pickle and disease_I2S.pickle | TOTAL:{time() - st:.2f}s')
+    return drug_I2S, disease_I2S
 
 
 if __name__ == '__main__':
@@ -93,7 +98,7 @@ if __name__ == '__main__':
     uSimMat = pool.apply_async(load_drug_sim)
     iSimMat = pool.apply_async(load_disease_sim)
     DiDrAMat = pool.apply_async(load_didra)
-    # GT = pool.apply_async(load_gt)
+    I2S = pool.apply_async(load_dictionary)
 
     train = train.get()
     test = test.get()
@@ -101,7 +106,7 @@ if __name__ == '__main__':
     uSimMat = uSimMat.get()
     iSimMat = iSimMat.get()
     DiDrAMat = DiDrAMat.get()
-    # GT = GT.get()
+    drug_I2S, disease_I2S = I2S.get()
 
     pool.close()
     pool.join()
@@ -130,7 +135,7 @@ if __name__ == '__main__':
     print(f'==================== Train ====================')
     print()
     start_time = time()
-    for epoch in range(0):
+    for epoch in range(epochs):
         epoch_time = time()
         print(f'========== Epoch {epoch} ==========')
         print()
@@ -146,4 +151,13 @@ if __name__ == '__main__':
 
     print(f'==================== Evaluate ====================')
     predict = predict_model(model, test, uSimMat, iSimMat, DiDrAMat)
+    print()
+    start_time = time()
+    print(f'Saving to predict.txt')
+    with open(f'predict.txt', 'w') as f:
+        for idx, (u, i, pred) in enumerate(predict):
+            if verbose != 0 and idx % verbose == 0:
+                progress(idx, len(predict), start_time, f'{drug_I2S[u]}\t{disease_I2S[i]}\t{pred:.4f}')
+            f.write(f'{drug_I2S[u]}\t{disease_I2S[i]}\t{pred}\n')
+        progressEnd(len(predict), start_time)
 
