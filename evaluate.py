@@ -25,8 +25,8 @@ def predict_model(model, test, uSimMat, iSimMat, DiDrAMat, batch_size=1024, verb
         item_input_c = np.array(DiDrAMat[i])
 
         dataset['u_input'].append(user_input)
-        dataset['u_input_c'].append(item_input)
-        dataset['i_input'].append(user_input_c)
+        dataset['u_input_c'].append(user_input_c)
+        dataset['i_input'].append(item_input)
         dataset['i_input_c'].append(item_input_c)
 
         if (idx+1) % batch_size == 0:
