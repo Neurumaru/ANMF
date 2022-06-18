@@ -9,7 +9,7 @@ import numpy as np
 
 def load_c_matrix(filename):
     DiDrMat = np.loadtxt(filename)
-    DiDrMat = DiDrMat + np.random.normal(0, 0.2, DiDrMat.shape)
+    DiDrMat = DiDrMat + np.random.normal(0, 1.0, DiDrMat.shape)
     return DiDrMat
 
 

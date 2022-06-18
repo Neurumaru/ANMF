@@ -17,7 +17,7 @@ from Dataset import get_dataset
 from evaluate import predict_model
 from progress import progress, progressEnd
 
-num_factors = 256
+num_factors = 1024
 num_negatives = 10
 learner = 'adam'
 learning_rate = 0.001
@@ -166,8 +166,8 @@ def main(data_folder):
 
 
 if __name__ == '__main__':
-    for i in range(8, 10):
-        main(f'Disease{i}')
-    for i in range(10):
+    #for i in range(9, 10):
+    #    main(f'Disease{i}')
+    for i in range(3, 10):
         main(f'Drug{i}')
 

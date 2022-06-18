@@ -53,7 +53,7 @@ for file in os.listdir(f'outputs'):
     progressEnd(len(lines), start_time)
     print()
     print(f'Sorting outputs\\{file}\\predict.txt')
-    predict.sort(key=lambda x: (-x[2], x[0], x[1]))
+    predict.sort(key=lambda x: (-x[2]))
 
     TP, FP = 0, 0
     TP_sum = 0
