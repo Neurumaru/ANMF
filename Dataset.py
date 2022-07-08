@@ -36,10 +36,10 @@ def get_model_dataset(train, num_negatives, uSimMat, iSimMat, DiDrAMat, neg):
                 "i_input": tf.TensorSpec(shape=None, dtype=tf.float32),
                 "i_input_c": tf.TensorSpec(shape=None, dtype=tf.float32)
             },
-            tf.TensorSpec(shape=(), dtype=tf.int64)
+            tf.TensorSpec(shape=(), dtype=tf.int32)
         ),
         args=(train, num_negatives, uSimMat, iSimMat, DiDrAMat)
-    ).batch(64).prefetch(tf.data.experimental.AUTOTUNE)
+    ).shuffle(4096).batch(64).prefetch(tf.data.experimental.AUTOTUNE)
     print(f'End generating model dataset | TOTAL:{time()-start_time:.2f}s')
 
     return model_dataset
@@ -88,7 +88,9 @@ def get_item_dataset(train, iSimMat, DiDrAMat):
 
 
 def get_model_generator(train, num_negatives, uSimMat, iSimMat, DiDrAMat):
-    for index in range(len(train)):
+    indices = np.arange(len(train))
+    np.random.shuffle(indices)
+    for index in indices:
         # positive instance
         instance = train[index]
         u = int(instance[0])
@@ -123,7 +125,9 @@ def get_model_generator(train, num_negatives, uSimMat, iSimMat, DiDrAMat):
 
 
 def get_user_generator(train, uSimMat, DiDrAMat):
-    for index in range(len(train)):
+    indices = np.arange(len(train))
+    np.random.shuffle(indices)
+    for index in indices:
         instance = train[index]
         u = int(instance[0])
         user_input = np.array(uSimMat[u])
@@ -134,7 +138,9 @@ def get_user_generator(train, uSimMat, DiDrAMat):
 
 
 def get_item_generator(train, iSimMat, DiDrAMat):
-    for index in range(len(train)):
+    indices = np.arange(len(train))
+    np.random.shuffle(indices)
+    for index in indices:
         instance = train[index]
         i = int(instance[1])
         item_input = np.array(iSimMat[i])

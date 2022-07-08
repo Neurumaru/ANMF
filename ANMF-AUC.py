@@ -21,7 +21,6 @@ def load_dictionary():
 drug_I2S, disease_I2S = load_dictionary()
 
 for file in os.listdir(f'outputs'):
-    file = 'Drug0'
     print(f'Reading Data\\{file}\\test.rating')
     Pos, Neg = set(), set()
     with open(f'Data\\{file}\\test.rating', 'r') as f:

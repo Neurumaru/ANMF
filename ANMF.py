@@ -17,16 +17,12 @@ from Dataset import get_dataset
 from evaluate import predict_model
 from progress import progress, progressEnd
 
-num_factors = 1024
 num_negatives = 10
 learner = 'adam'
 learning_rate = 0.001
 epochs = 50
 batch_size = 64
 verbose = 1
-
-drug = 11219
-disease = 6322
 
 
 def load_train(data_folder):
@@ -45,7 +41,7 @@ def load_test(data_folder):
     return result
 
 
-def load_negative(data_folder):
+def load_negative(data_folder, drug):
     st = time()
     print(f'Start loading negative.rating')
     result = load_negative_file(f'Data\\{data_folder}\\negative.rating', drug)
@@ -88,14 +84,14 @@ def load_dictionary():
     return drug_I2S, disease_I2S
 
 
-def main(data_folder):
+def ANMF(data_folder, drug, disease, num_factors, original_dataset=False, original_evaluate=False):
     print(f'==================== Dataset {data_folder} ====================')
     print()
 
     pool = Pool(7)
     train = pool.apply_async(load_train, args=[data_folder])
     test = pool.apply_async(load_test, args=[data_folder])
-    neg_sample = pool.apply_async(load_negative, args=[data_folder])
+    neg_sample = pool.apply_async(load_negative, args=[data_folder, drug])
     uSimMat = pool.apply_async(load_drug_sim, args=[data_folder])
     iSimMat = pool.apply_async(load_disease_sim, args=[data_folder])
     DiDrAMat = pool.apply_async(load_didra, args=[data_folder])
@@ -111,6 +107,12 @@ def main(data_folder):
 
     pool.close()
     pool.join()
+
+    if original_dataset:
+        from Dataset_original import Dataset
+        dataset = Dataset()
+        train, test, uSimMat, iSimMat, DiDrAMat, neg_sample \
+            = dataset.trainMatrix, dataset.testRatings, dataset.uSimMat, dataset.iSimMat, dataset.DiDrAMat, dataset.Sim_order
 
     print()
     print()
@@ -141,8 +143,16 @@ def main(data_folder):
         print()
         model_dataset, user_dataset, item_dataset = get_dataset(train, num_negatives, uSimMat, iSimMat, DiDrAMat, neg_sample)
         print()
+        print()
         fit_model_one_epoch(model, u_autoencoder, i_autoencoder, model_dataset, user_dataset, item_dataset, batch_size)
         print()
+        if original_evaluate:
+            from evaluate_original import evaluate_model
+            hit, auc, fpr, tpr, _, area_pr = evaluate_model(model, test, uSimMat, iSimMat, DiDrAMat, 10, 1, train)
+            print('area_pr: ' + str(area_pr))
+            print('auc: ' + str(auc))
+            print('hit: ' + str(hit))
+            print()
         print(f'EPOCH:{time() - epoch_time:.2f}s')
         print()
         print()
@@ -166,8 +176,9 @@ def main(data_folder):
 
 
 if __name__ == '__main__':
-    #for i in range(9, 10):
-    #    main(f'Disease{i}')
-    for i in range(3, 10):
-        main(f'Drug{i}')
-
+    # ANMF(f'master', drug=593, disease=313, num_factors=256, original_evaluate=True)
+    # ANMF(f'master_original', drug=593, disease=313, num_factors=256, original_dataset=True, original_evaluate=True)
+    for i in range(10):
+        ANMF(f'Disease{i}', drug=11219, disease=6322, num_factors=512)
+    for i in range(10):
+        ANMF(f'Drug{i}', drug=11219, disease=6322, num_factors=512)
