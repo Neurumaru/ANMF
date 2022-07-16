@@ -8,17 +8,19 @@ from time import time
 neg_sample = None
 
 
-def get_dataset(train, num_negatives, uSimMat, iSimMat, DiDrAMat, neg):
-    with ThreadPoolExecutor(3) as pool:
-        model_dataset = pool.submit(get_model_dataset, train, num_negatives, uSimMat, iSimMat, DiDrAMat, neg)
+# def get_dataset(train, num_negatives, uSimMat, iSimMat, DiDrAMat, neg):
+def get_dataset(train, uSimMat, iSimMat, DiDrAMat):
+    with ThreadPoolExecutor(2) as pool:
+        # model_dataset = pool.submit(get_model_dataset, train, num_negatives, uSimMat, iSimMat, DiDrAMat, neg)
         user_dataset = pool.submit(get_user_dataset, train, uSimMat, DiDrAMat)
         item_dataset = pool.submit(get_item_dataset, train, iSimMat, DiDrAMat)
 
-        model_dataset = model_dataset.result()
+        # model_dataset = model_dataset.result()
         user_dataset = user_dataset.result()
         item_dataset = item_dataset.result()
 
-    return model_dataset, user_dataset, item_dataset
+    # return model_dataset, user_dataset, item_dataset
+    return user_dataset, item_dataset
 
 
 def get_model_dataset(train, num_negatives, uSimMat, iSimMat, DiDrAMat, neg):
@@ -26,7 +28,7 @@ def get_model_dataset(train, num_negatives, uSimMat, iSimMat, DiDrAMat, neg):
     neg_sample = neg
 
     start_time = time()
-    print(f'Start generating model dataset')
+    # print(f'Start generating model dataset')
     model_dataset = tf.data.Dataset.from_generator(
         get_model_generator,
         output_signature=(
@@ -40,14 +42,14 @@ def get_model_dataset(train, num_negatives, uSimMat, iSimMat, DiDrAMat, neg):
         ),
         args=(train, num_negatives, uSimMat, iSimMat, DiDrAMat)
     ).shuffle(4096).batch(64).prefetch(tf.data.experimental.AUTOTUNE)
-    print(f'End generating model dataset | TOTAL:{time()-start_time:.2f}s')
+    # print(f'End generating model dataset | TOTAL:{time()-start_time:.2f}s')
 
     return model_dataset
 
 
 def get_user_dataset(train, uSimMat, DiDrAMat):
     start_time = time()
-    print(f'Start generating user dataset')
+    # print(f'Start generating user dataset')
     user_dataset = tf.data.Dataset.from_generator(
         get_user_generator,
         output_signature=(
@@ -61,14 +63,14 @@ def get_user_dataset(train, uSimMat, DiDrAMat):
         ),
         args=(train, uSimMat, DiDrAMat)
     ).batch(64).prefetch(tf.data.experimental.AUTOTUNE)
-    print(f'End generating user dataset | TOTAL:{time()-start_time:.2f}s')
+    # print(f'End generating user dataset | TOTAL:{time()-start_time:.2f}s')
 
     return user_dataset
 
 
 def get_item_dataset(train, iSimMat, DiDrAMat):
     start_time = time()
-    print(f'Start generating item dataset')
+    # print(f'Start generating item dataset')
     item_dataset = tf.data.Dataset.from_generator(
         get_item_generator,
         output_signature=(
@@ -82,7 +84,7 @@ def get_item_dataset(train, iSimMat, DiDrAMat):
         ),
         args=(train, iSimMat, DiDrAMat)
     ).batch(64).prefetch(tf.data.experimental.AUTOTUNE)
-    print(f'End generating item dataset | TOTAL:{time()-start_time:.2f}s')
+    # print(f'End generating item dataset | TOTAL:{time()-start_time:.2f}s')
 
     return item_dataset
 

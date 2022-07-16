@@ -60,9 +60,9 @@ class Dataset(object):
                 num_items = max(num_items, i)
                 line = f.readline()
         row,col=DiDrMat.shape
-        for i in range(row):
-            for j in range(col):
-                DiDrMat[i][j]=DiDrMat[i][j]+np.random.normal(0,0.2)
+        # for i in range(row):
+        #     for j in range(col):
+        #         DiDrMat[i][j]=DiDrMat[i][j]+np.random.normal(0,0.2)
         return DiDrMat
 
     def load_rating_file_as_list(self, filename):

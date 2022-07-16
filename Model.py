@@ -15,9 +15,12 @@ def get_model(u_dim, i_dim, latent_dim):
     # user auto-encoder
     u_input = Input(shape=(u_dim,), dtype='float32', name='u_input')
     u_input_c = Input(shape=(i_dim,), dtype='float32', name='u_input_c')
-
-    u_encoded = Dense(latent_dim, activation='linear')(u_input)
-    u_encoded_c = Dense(latent_dim, activation='linear')(u_input_c)
+    u_gaussian = keras.layers.GaussianNoise(0.2)(u_input)
+    u_gaussian_c = keras.layers.GaussianNoise(0.2)(u_input_c)
+    u_encoded = Dense(latent_dim, activation='linear')(u_gaussian)
+    u_encoded_c = Dense(latent_dim, activation='linear')(u_gaussian_c)
+    # u_encoded = Dense(latent_dim, activation='linear')(u_input)
+    # u_encoded_c = Dense(latent_dim, activation='linear')(u_input_c)
     x = keras.layers.concatenate([u_encoded, u_encoded_c])
     # u_encoded = Dense(64, activation='relu')(u_encoded)
     u_middle = Dense(latent_dim, activation='relu', name='u_middle')(x)
@@ -32,8 +35,12 @@ def get_model(u_dim, i_dim, latent_dim):
     i_input = Input(shape=(i_dim,), dtype='float32', name='i_input')
     i_input_c = Input(shape=(u_dim,), dtype='float32', name='i_input_c')
     # i_encoded = Dense(64, activation='relu')(i_input)
-    i_encoded = Dense(latent_dim, activation='linear')(i_input)
-    i_encoded_c = Dense(latent_dim, activation='linear')(i_input_c)
+    i_gaussian = keras.layers.GaussianNoise(0.2)(i_input)
+    i_gaussian_c = keras.layers.GaussianNoise(0.2)(i_input_c)
+    i_encoded = Dense(latent_dim, activation='linear')(i_gaussian)
+    i_encoded_c = Dense(latent_dim, activation='linear')(i_gaussian_c)
+    # i_encoded = Dense(latent_dim, activation='linear')(i_input)
+    # i_encoded_c = Dense(latent_dim, activation='linear')(i_input_c)
     x = keras.layers.concatenate([i_encoded, i_encoded_c])
     i_middle = Dense(latent_dim, activation='relu', name='i_middle')(x)
     # i_decoded = Dense(64, activation='relu')(i_middle)
@@ -70,7 +77,5 @@ def compile_model(model, u_autoencoder, i_autoencoder, learner, learning_rate):
         i_autoencoder.compile(optimizer=SGD(learning_rate=learning_rate), loss='mean_squared_error')
 
 
-def fit_model_one_epoch(model, u_autoencoder, i_autoencoder, model_dataset, user_dataset, item_dataset, batch_size):
-    u_autoencoder.fit(user_dataset, batch_size=batch_size, epochs=1, verbose=1, shuffle=True)
-    i_autoencoder.fit(item_dataset, batch_size=batch_size, epochs=1, verbose=1, shuffle=True)
-    model.fit(model_dataset, batch_size=batch_size, epochs=1, verbose=1, shuffle=True)
+def fit_model_one_epoch(model, dataset, batch_size, verbose=1):
+    model.fit(dataset, batch_size=batch_size, epochs=1, verbose=verbose, shuffle=True)
