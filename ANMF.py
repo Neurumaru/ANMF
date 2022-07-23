@@ -12,7 +12,7 @@ from multiprocessing.pool import Pool
 from time import time
 from DataLoader import load_c_matrix, load_rating_file_as_list, load_item_sim_file, load_user_sim_file, load_negative_file
 from Model import get_model, compile_model, fit_model_one_epoch
-from Dataset import get_dataset, get_model_dataset
+from Dataset import get_dataset
 from evaluate import predict_model
 from progress import progress, progressEnd
 
@@ -26,7 +26,7 @@ verbose = 1
 def load_train(data_folder):
     st = time()
     print(f'Start loading train.rating')
-    result = load_rating_file_as_list(f'Data\\{data_folder}\\train.rating')
+    result = load_rating_file_as_list(f'inputs\\{data_folder}\\train.rating')
     print(f'End loading train.rating | TOTAL:{time() - st:.2f}s')
     return result
 
@@ -34,7 +34,7 @@ def load_train(data_folder):
 def load_test(data_folder):
     st = time()
     print(f'Start loading test.rating')
-    result = load_rating_file_as_list(f'Data\\{data_folder}\\test.rating')
+    result = load_rating_file_as_list(f'inputs\\{data_folder}\\test.rating')
     print(f'End loading test.rating | TOTAL:{time() - st:.2f}s')
     return result
 
@@ -42,7 +42,7 @@ def load_test(data_folder):
 def load_negative(data_folder, drug):
     st = time()
     print(f'Start loading negative.rating')
-    result = load_negative_file(f'Data\\{data_folder}\\negative.rating', drug)
+    result = load_negative_file(f'inputs\\{data_folder}\\negative.rating', drug)
     print(f'End loading negative.rating | TOTAL:{time() - st:.2f}s')
     return result
 
@@ -50,7 +50,7 @@ def load_negative(data_folder, drug):
 def load_drug_sim(data_folder):
     st = time()
     print(f'Start loading DrugSim.txt')
-    result = load_user_sim_file(f'Data\\{data_folder}\\DrugSim.txt')
+    result = load_user_sim_file(f'inputs\\{data_folder}\\DrugSim.txt')
     print(f'End loading DrugSim.txt | TOTAL:{time() - st:.2f}s')
     return result
 
@@ -58,7 +58,7 @@ def load_drug_sim(data_folder):
 def load_disease_sim(data_folder):
     st = time()
     print(f'Start loading DiseaseSim.txt')
-    result = load_item_sim_file(f'Data\\{data_folder}\\DiseaseSim.txt')
+    result = load_item_sim_file(f'inputs\\{data_folder}\\DiseaseSim.txt')
     print(f'End loading DiseaseSim.txt | TOTAL:{time() - st:.2f}s')
     return result
 
@@ -66,7 +66,7 @@ def load_disease_sim(data_folder):
 def load_didra(data_folder):
     st = time()
     print(f'Start loading DiDrA.txt')
-    result = load_c_matrix(f'Data\\{data_folder}\\DiDrA.txt')
+    result = load_c_matrix(f'inputs\\{data_folder}\\DiDrA.txt')
     print(f'End loading DiDrA.txt | TOTAL:{time() - st:.2f}s')
     return result
 
@@ -74,15 +74,18 @@ def load_didra(data_folder):
 def load_dictionary():
     st = time()
     print(f'Start loading drug_I2S.pickle and disease_I2S.pickle')
-    with open('Data/drug_I2S.pickle', 'rb') as f:
+    with open('inputs\\drug_I2S.pickle', 'rb') as f:
         drug_I2S = pickle.load(f)
-    with open('Data/disease_I2S.pickle', 'rb') as f:
+    with open('inputs\\disease_I2S.pickle', 'rb') as f:
         disease_I2S = pickle.load(f)
     print(f'End loading drug_I2S.pickle and disease_I2S.pickle | TOTAL:{time() - st:.2f}s')
     return drug_I2S, disease_I2S
 
 
-def ANMF(data_folder, drug, disease, num_factors, epochs = 50, original_dataset=False, original_evaluate=False):
+def ANMF(
+    data_folder, drug, disease, 
+    num_factors=256, epochs = 50, noise = 0.3, alpha = 0.5, beta = 0.5, ld = 0.5, delta = 0.5, phi = 0.5, psi = 0.5, 
+    original_dataset=False, original_evaluate=False):
     print(f'==================== Dataset ({data_folder}) ====================')
     print()
 
@@ -125,31 +128,22 @@ def ANMF(data_folder, drug, disease, num_factors, epochs = 50, original_dataset=
     print(f'==================== Model ({data_folder}) ====================')
     print()
     print(f'Building model')
-    model, u_autoencoder, i_autoencoder = get_model(drug, disease, num_factors)
+    model, prediction_model = get_model(drug, disease, num_factors, noise, ld, delta)
     print(f'Compiling model')
-    compile_model(model, u_autoencoder, i_autoencoder, learner, learning_rate)
+    compile_model(model, learner, learning_rate, alpha, beta, phi, psi)
     print()
     print(f'==================== Train ({data_folder}) ====================')
     start_time = time()
     print()
     for epoch in range(epochs):
-        print(f'========== Auto-Encoders : Epoch {epoch} ({data_folder}) ==========')
-        user_dataset, item_dataset = get_dataset(train, uSimMat, iSimMat, DiDrAMat)
-        print()
-        fit_model_one_epoch(u_autoencoder, user_dataset, batch_size)
-        fit_model_one_epoch(i_autoencoder, item_dataset, batch_size)
-        print()
-        gc.collect()
-        tf.keras.backend.clear_session()
-    for epoch in range(epochs):
         epoch_time = time()
         print(f'========== ANMF : Epoch {epoch} ({data_folder}) ==========')
-        model_dataset = get_model_dataset(train, num_negatives, uSimMat, iSimMat, DiDrAMat, neg_sample)
+        dataset = get_dataset(train, num_negatives, uSimMat, iSimMat, DiDrAMat, neg_sample)
         print()
-        fit_model_one_epoch(model, model_dataset, batch_size)
+        fit_model_one_epoch(model, dataset, batch_size)
         if original_evaluate:
             from evaluate_original import evaluate_model
-            hit, auc, fpr, tpr, _, area_pr = evaluate_model(model, test, uSimMat, iSimMat, DiDrAMat, 10, 1, train)
+            hit, auc, _, _, _, area_pr = evaluate_model(prediction_model, test, uSimMat, iSimMat, DiDrAMat, 10, 1, train)
             print()
             print('area_pr: ' + str(area_pr))
             print('auc: ' + str(auc))
@@ -162,7 +156,7 @@ def ANMF(data_folder, drug, disease, num_factors, epochs = 50, original_dataset=
     print(f'TOTAL:{time() - start_time:.2f}s')
     print()
     print(f'==================== Evaluate ({data_folder}) ====================')
-    predict = predict_model(model, test, uSimMat, iSimMat, DiDrAMat)
+    predict = predict_model(prediction_model, test, uSimMat, iSimMat, DiDrAMat)
     print()
     start_time = time()
     print(f'Saving to predict.txt')
@@ -176,9 +170,10 @@ def ANMF(data_folder, drug, disease, num_factors, epochs = 50, original_dataset=
 
 
 if __name__ == '__main__':
-    # ANMF(f'master', drug=593, disease=313, num_factors=256, original_evaluate=True)
+    ANMF(f'master', drug=593, disease=313, num_factors=256, original_evaluate=True)
     # ANMF(f'master_original', drug=593, disease=313, num_factors=256, original_dataset=True, original_evaluate=True)
-    for i in range(10):
-        ANMF(f'Disease{i}', drug=11219, disease=6322, num_factors=512, epochs=50)
+    # for i in range(10):
+    #     ANMF(f'Disease{i}', drug=11219, disease=6322, num_factors=512, epochs=50)
     # for i in range(10):
     #     ANMF(f'Drug{i}', drug=11219, disease=6322, num_factors=512, epochs=50)
+    ANMF(f'Drug(0)', drug=11219, disease=6322, num_factors=256, epochs = 50, noise = 0.3, alpha = 0.5, beta = 0.5, ld = 0.5, delta = 0.5, phi = 0.5, psi = 0.5)
