@@ -15,6 +15,7 @@ from Model import get_model, compile_model, fit_model_one_epoch
 from Dataset import get_dataset
 from evaluate import predict_model
 from progress import progress, progressEnd
+from evaluate_original import evaluate_model
 
 num_negatives = 10
 learner = 'adam'
@@ -84,8 +85,9 @@ def load_dictionary():
 
 def ANMF(
     data_folder, drug, disease, 
-    num_factors=256, epochs = 50, noise = 0.3, alpha = 0.5, beta = 0.5, ld = 0.5, delta = 0.5, phi = 0.5, psi = 0.5, 
-    original_dataset=False, original_evaluate=False):
+    num_factors=256, epochs=50, noise=0.3, alpha=0.5, beta=0.5, ld=0.5, delta=0.5, phi=0.5, psi=0.5, 
+    original_dataset=False, original_evaluate=False, return_AUC=False, save_predict=True
+):
     print(f'==================== Dataset ({data_folder}) ====================')
     print()
 
@@ -142,7 +144,6 @@ def ANMF(
         print()
         fit_model_one_epoch(model, dataset, batch_size)
         if original_evaluate:
-            from evaluate_original import evaluate_model
             hit, auc, _, _, _, area_pr = evaluate_model(prediction_model, test, uSimMat, iSimMat, DiDrAMat, 10, 1, train)
             print()
             print('area_pr: ' + str(area_pr))
@@ -158,22 +159,91 @@ def ANMF(
     print(f'==================== Evaluate ({data_folder}) ====================')
     predict = predict_model(prediction_model, test, uSimMat, iSimMat, DiDrAMat)
     print()
-    start_time = time()
-    print(f'Saving to predict.txt')
-    os.makedirs(f'outputs\\{data_folder}', exist_ok=True)
-    with open(f'outputs\\{data_folder}\\predict.txt', 'w') as f:
-        for idx, (u, i, pred) in enumerate(predict):
-            if verbose != 0 and idx % verbose == 0:
-                progress(idx, len(predict), start_time, f'{drug_I2S[u]}\t{disease_I2S[i]}\t{pred:.4f}')
-            f.write(f'{drug_I2S[u]}\t{disease_I2S[i]}\t{pred}\n')
-        progressEnd(len(predict), start_time)
+    if save_predict:
+        start_time = time()
+        print(f'Saving to predict.txt')
+        os.makedirs(f'outputs\\{data_folder}', exist_ok=True)
+        with open(f'outputs\\{data_folder}\\predict.txt', 'w') as f:
+            for idx, (u, i, pred) in enumerate(predict):
+                if verbose != 0 and idx % verbose == 0:
+                    progress(idx, len(predict), start_time)
+                f.write(f'{drug_I2S[u]}\t{disease_I2S[i]}\t{pred}\n')
+            progressEnd(len(predict), start_time)
+
+    if return_AUC:
+        if original_evaluate:
+            return auc
+        else:
+            Pos, Neg = set(), set()
+
+            for drug, disease, score in test:
+                if score == '1':
+                    Pos.add((drug_I2S[int(drug)], disease_I2S[int(disease)]))
+                else:
+                    Neg.add((drug_I2S[int(drug)], disease_I2S[int(disease)]))
+
+            predict.sort(key=lambda x: x[2], reverse=True)
+
+            TP, FP = 0, 0
+            TP_sum = 0
+            for drug, disease, score in predict:
+                if (drug, disease) in Pos:
+                    TP += 1
+                elif (drug, disease) in Neg:
+                    FP += 1
+                    TP_sum += TP
+            AUC = TP_sum / (TP * FP)
+
+            return AUC
+    else:
+        return
 
 
 if __name__ == '__main__':
-    ANMF(f'master', drug=593, disease=313, num_factors=256, original_evaluate=True)
-    # ANMF(f'master_original', drug=593, disease=313, num_factors=256, original_dataset=True, original_evaluate=True)
+    # ANMF(f'master', drug=593, disease=313, num_factors=256, epochs=50, original_evaluate=True)
+    # ANMF(f'master_original', drug=593, disease=313, num_factors=256, epochs=50, original_dataset=True, original_evaluate=True)
     # for i in range(10):
     #     ANMF(f'Disease{i}', drug=11219, disease=6322, num_factors=512, epochs=50)
     # for i in range(10):
     #     ANMF(f'Drug{i}', drug=11219, disease=6322, num_factors=512, epochs=50)
-    ANMF(f'Drug(0)', drug=11219, disease=6322, num_factors=256, epochs = 50, noise = 0.3, alpha = 0.5, beta = 0.5, ld = 0.5, delta = 0.5, phi = 0.5, psi = 0.5)
+
+    noise = [0.1, 0.2, 0.3]
+    alpha_beta = [0.1, 0.3, 0.5, 0.7, 0.9]
+    ld_delta = [0.001, 0.0001, 0.00001]
+    phi_psi = [0.25, 0.5, 1, 2]
+    num_factors = [128]
+
+    results = dict()
+
+    max_AUC, max_noise, max_alpha_beta, max_ld_delta, max_phi_psi, max_num_factors = 0, 0, 0, 0, 0, 0
+
+    for n in noise:
+        for ab in alpha_beta:
+            for ld in ld_delta:
+                for pp in phi_psi:
+                    for nf in num_factors:
+                        AUC = ANMF(
+                            f'master', drug=593, disease=313, epochs=50,
+                            num_factors=nf, noise=n, alpha=ab, beta=ab, ld=ld, delta=ld, phi=pp, psi=pp, 
+                            return_AUC=True, save_predict=False
+                        )
+                        results[(n, ab, ld, pp, nf)] = AUC
+                        if AUC > max_AUC:
+                            max_AUC = AUC
+                            max_noise = n
+                            max_alpha_beta = ab
+                            max_ld_delta = ld
+                            max_phi_psi = pp
+                            max_num_factors = nf
+
+    print(f'========================================')
+    print(f'AUC: {max_AUC}')
+    print(f'NOISE: {max_noise}')
+    print(f'ALPHA: {max_alpha_beta}')
+    print(f'BETA: {max_alpha_beta}')
+    print(f'LAMBDA: {max_ld_delta}')
+    print(f'DELTA: {max_ld_delta}')
+    print(f'PHI: {max_phi_psi}')
+    print(f'PSI: {max_phi_psi}')
+    print(f'NUM_FACTORS: {max_num_factors}')
+    print(f'========================================')
