@@ -65,15 +65,22 @@ def compile_model(model, learner, learning_rate, alpha, beta, phi, psi):
         "i_output": item_loss_weight,
         "i_output_c": item_c_loss_weight
     }
+    loss = {
+        "prediction": 'binary_crossentropy',
+        "u_output": 'mean_squared_error',
+        "u_output_c": 'mean_squared_error',
+        "i_output": 'mean_squared_error',
+        "i_output_c": 'mean_squared_error'
+    }
 
     if learner.lower() == "adagrad":
-        model.compile(optimizer=Adagrad(learning_rate=learning_rate), loss='binary_crossentropy', loss_weights=loss_weights)
+        model.compile(optimizer=Adagrad(learning_rate=learning_rate), loss=loss, loss_weights=loss_weights)
     elif learner.lower() == "rmsprop":
-        model.compile(optimizer=RMSprop(learning_rate=learning_rate), loss='binary_crossentropy', loss_weights=loss_weights)
+        model.compile(optimizer=RMSprop(learning_rate=learning_rate), loss=loss, loss_weights=loss_weights)
     elif learner.lower() == "adam":
-        model.compile(optimizer=Adam(learning_rate=learning_rate), loss='binary_crossentropy', loss_weights=loss_weights)
+        model.compile(optimizer=Adam(learning_rate=learning_rate), loss=loss, loss_weights=loss_weights)
     else:
-        model.compile(optimizer=SGD(learning_rate=learning_rate), loss='binary_crossentropy', loss_weight=loss_weights)
+        model.compile(optimizer=SGD(learning_rate=learning_rate), loss=loss, loss_weight=loss_weights)
 
 
 def fit_model_one_epoch(model, dataset, batch_size, verbose=1):
