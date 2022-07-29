@@ -71,15 +71,15 @@ def load_didra(data_folder):
     return result
 
 
-def load_dictionary():
-    st = time()
-    # print(f'Start loading drug_I2S.pickle and disease_I2S.pickle')
-    with open('inputs\\drug_I2S.pickle', 'rb') as f:
-        drug_I2S = pickle.load(f)
-    with open('inputs\\disease_I2S.pickle', 'rb') as f:
-        disease_I2S = pickle.load(f)
-    # print(f'End loading drug_I2S.pickle and disease_I2S.pickle | TOTAL:{time() - st:.2f}s')
-    return drug_I2S, disease_I2S
+# def load_dictionary():
+#     st = time()
+#     # print(f'Start loading drug_I2S.pickle and disease_I2S.pickle')
+#     with open('inputs\\drug_I2S.pickle', 'rb') as f:
+#         drug_I2S = pickle.load(f)
+#     with open('inputs\\disease_I2S.pickle', 'rb') as f:
+#         disease_I2S = pickle.load(f)
+#     # print(f'End loading drug_I2S.pickle and disease_I2S.pickle | TOTAL:{time() - st:.2f}s')
+#     return drug_I2S, disease_I2S
 
 
 def ANMF(
@@ -91,14 +91,14 @@ def ANMF(
     # print(f'==================== Dataset ({data_folder}) ====================')
     # print()
 
-    pool = Pool(7)
+    pool = Pool(6)
     train = pool.apply_async(load_train, args=[data_folder])
     test = pool.apply_async(load_test, args=[data_folder])
     neg_sample = pool.apply_async(load_negative, args=[data_folder, drug])
     uSimMat = pool.apply_async(load_drug_sim, args=[data_folder])
     iSimMat = pool.apply_async(load_disease_sim, args=[data_folder])
     DiDrAMat = pool.apply_async(load_didra, args=[data_folder])
-    I2S = pool.apply_async(load_dictionary)
+    # I2S = pool.apply_async(load_dictionary)
 
     train = train.get()
     test = test.get()
@@ -106,7 +106,7 @@ def ANMF(
     uSimMat = uSimMat.get()
     iSimMat = iSimMat.get()
     DiDrAMat = DiDrAMat.get()
-    drug_I2S, disease_I2S = I2S.get()
+    # drug_I2S, disease_I2S = I2S.get()
 
     pool.close()
     pool.join()
@@ -160,14 +160,14 @@ def ANMF(
     predict = predict_model(prediction_model, test, uSimMat, iSimMat, DiDrAMat)
     # print()
     if save_predict:
-        start_time = time()
+        # start_time = time()
         # print(f'Saving to predict.txt')
         os.makedirs(f'outputs\\{data_folder}', exist_ok=True)
         with open(f'outputs\\{data_folder}\\predict.txt', 'w') as f:
             for idx, (u, i, pred) in enumerate(predict):
                 # if verbose != 0 and idx % verbose == 0:
                 #     progress(idx, len(predict), start_time)
-                f.write(f'{drug_I2S[u]}\t{disease_I2S[i]}\t{pred}\n')
+                f.write(f'{u}\t{i}\t{pred}\n')
             # progressEnd(len(predict), start_time)
 
     if return_AUC:
@@ -247,7 +247,7 @@ if __name__ == '__main__':
                                     continue
 
                                 AUC = ANMF(
-                                    f'Drug0', drug=3245, disease=6322, epochs=50,
+                                    f'Drug0', drug=3245, disease=6322, epochs=e,
                                     num_factors=nf, noise=n, num_negatives=nn,
                                     alpha=ab, beta=ab, ld=ld, delta=ld, phi=pp, psi=pp, 
                                     return_AUC=True, save_predict=True

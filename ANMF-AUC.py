@@ -7,23 +7,26 @@ from progress import progress, progressEnd
 verbose = 1000
 
 
-def load_dictionary():
-    st = time()
-    # print(f'Start loading drug_I2S.pickle and disease_I2S.pickle')
-    with open('Data/drug_I2S.pickle', 'rb') as f:
-        drug_I2S = pickle.load(f)
-    with open('Data/disease_I2S.pickle', 'rb') as f:
-        disease_I2S = pickle.load(f)
-    # print(f'End loading drug_I2S.pickle and disease_I2S.pickle | TOTAL:{time() - st:.2f}s')
-    return drug_I2S, disease_I2S
+# def load_dictionary():
+#     st = time()
+#     # print(f'Start loading drug_I2S.pickle and disease_I2S.pickle')
+#     with open('inputs/drug_I2S.pickle', 'rb') as f:
+#         drug_I2S = pickle.load(f)
+#     with open('inputs/disease_I2S.pickle', 'rb') as f:
+#         disease_I2S = pickle.load(f)
+#     # print(f'End loading drug_I2S.pickle and disease_I2S.pickle | TOTAL:{time() - st:.2f}s')
+#     return drug_I2S, disease_I2S
 
 
-drug_I2S, disease_I2S = load_dictionary()
+# drug_I2S, disease_I2S = load_dictionary()
 
 for file in os.listdir(f'outputs'):
+    if file == 'results.pickle':
+        continue
+    
     # print(f'Reading Data\\{file}\\test.rating')
     Pos, Neg = set(), set()
-    with open(f'Data\\{file}\\test.rating', 'r') as f:
+    with open(f'inputs\\{file}\\test.rating', 'r') as f:
         lines = f.readlines()
     # print()
     # print(f'Parsing Data\\{file}\\test.rating')
@@ -33,9 +36,9 @@ for file in os.listdir(f'outputs'):
         #     progress(idx, len(lines), start_time, line.strip())
         drug, disease, score = line.strip().split('\t')
         if score == '1':
-            Pos.add((drug_I2S[int(drug)], disease_I2S[int(disease)]))
+            Pos.add((int(drug), int(disease)))
         else:
-            Neg.add((drug_I2S[int(drug)], disease_I2S[int(disease)]))
+            Neg.add((int(drug), int(disease)))
     # progressEnd(len(lines), start_time)
     # print()
     # print(f'Reading outputs\\{file}\\predict.txt')
@@ -49,7 +52,7 @@ for file in os.listdir(f'outputs'):
         # if verbose != 0 and idx % verbose == 0:
         #     progress(idx, len(lines), start_time, line.strip())
         drug, disease, score = line.strip().split('\t')
-        predict.append((drug, disease, float(score)))
+        predict.append((int(drug), int(disease), float(score)))
     # progressEnd(len(lines), start_time)
     # print()
     # print(f'Sorting outputs\\{file}\\predict.txt')
