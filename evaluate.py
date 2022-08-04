@@ -14,10 +14,10 @@ def predict_model(model, test, uSimMat, iSimMat, DiDrAMat, batch_size=1024, verb
     result = list()
 
     start_time = time()
-    print(f'Predict using model')
+    # print(f'Predict using model')
     for idx, (u, i, r) in enumerate(test):
-        if verbose != 0 and idx % verbose == 0:
-            progress(idx, len(test), start_time, (u, i))
+        # if verbose != 0 and idx % verbose == 0:
+        #     progress(idx, len(test), start_time, (u, i))
 
         user_input = np.array(uSimMat[u])
         item_input = np.array(iSimMat[i])
@@ -30,7 +30,7 @@ def predict_model(model, test, uSimMat, iSimMat, DiDrAMat, batch_size=1024, verb
         dataset['i_input_c'].append(item_input_c)
 
         if (idx+1) % batch_size == 0:
-            progress(idx, len(test), start_time, 'Predicting')
+            # progress(idx, len(test), start_time, 'Predicting')
 
             tmp = tf.data.Dataset.from_tensors(dataset)
             predict = model.predict(tmp)
@@ -42,11 +42,11 @@ def predict_model(model, test, uSimMat, iSimMat, DiDrAMat, batch_size=1024, verb
             dataset['i_input_c'].clear()
 
     if len(dataset['u_input']) > 0:
-        progress(len(test), len(test), start_time, 'Predicting')
+        # progress(len(test), len(test), start_time, 'Predicting')
         tmp = tf.data.Dataset.from_tensors(dataset)
         predict = model.predict(tmp)
         result.extend(predict)
 
-    progressEnd(len(test), start_time)
+    # progressEnd(len(test), start_time)
     u, i, r = zip(*test)
     return list(zip(u, i, np.array(result).reshape(-1)))
