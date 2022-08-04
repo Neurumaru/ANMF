@@ -138,11 +138,12 @@ def ANMF(
     start_time = time()
     # print()
     for epoch in range(epochs):
+        progress(epoch, epochs, start_time)
         # epoch_time = time()
         # print(f'========== ANMF : Epoch {epoch} ({data_folder}) ==========')
         dataset = get_dataset(train, num_negatives, uSimMat, iSimMat, DiDrAMat, neg_sample)
         # print()
-        fit_model_one_epoch(model, dataset, batch_size)
+        fit_model_one_epoch(model, dataset, batch_size, verbose=0)
         if original_evaluate:
             hit, auc, _, _, _, area_pr = evaluate_model(prediction_model, test, uSimMat, iSimMat, DiDrAMat, 10, 1, train)
             # print()
@@ -207,26 +208,30 @@ if __name__ == '__main__':
     # for i in range(10):
     #     ANMF(f'Drug{i}', drug=11219, disease=6322, num_factors=512, epochs=50)
 
-    epoch = [50]
+    epoch = [30]
     noise = [0.1, 0.2]
-    alpha_beta = [0.2, 0.5, 0.8]
-    ld_delta = [1e-03, 1e-04]
-    phi_psi = [1]
-    num_factors = [256, 512]
+    alpha_beta = [0.8]
+    ld_delta = [1e-04]
+    phi_psi = [0.5, 1, 2]
+    num_factors = [512]
     num_negatives = [10]
 
     max_AUC, max_epoch, max_noise, max_alpha_beta, max_ld_delta, max_phi_psi, max_num_factors, max_num_negatives = 0, 0, 0, 0, 0, 0, 0, 0
 
     try:
-        with open('outputs\\results.pickle', 'rb') as f:
+        with open('outputs/results.pickle', 'rb') as f:
             results = pickle.load(f)
     except:
         results = dict()
 
+    print(f'=========================================================================================================')
+    print(f'{"AUC":9s}{"EPOCH":9s}{"NOISE":9s}{"ALPAH":9s}{"BETA":9s}{"LAMDA":9s}{"DELTA":9s}{"PHI":9s}{"PSI":9s}{"FACTORS":12s}{"NAGATIVES":12s}')
     for result in results:
-        if results[result] > max_AUC:
-            (e, n, ab, ld, pp, nf, nn) = result
-            max_AUC = results[result]
+        AUC = results[result]
+        (e, n, ab, ld, pp, nf, nn) = result
+        print(f'{AUC:<9.4f}{e:<9d}{n:<9.2f}{ab:<9.2f}{ab:<9.2f}{ld:<9.1e}{ld:<9.1e}{pp:<9.2f}{pp:<9.2f}{nf:<12d}{nn:<12d}')
+        if AUC > max_AUC:
+            max_AUC = AUC
             max_epoch = e
             max_noise = n
             max_alpha_beta = ab
@@ -234,7 +239,10 @@ if __name__ == '__main__':
             max_phi_psi = pp
             max_num_factors = nf
             max_num_negatives = nn
-
+    print(f'=========================================================================================================')
+    print(f'{max_AUC:<9.4f}{max_epoch:<9d}{max_noise:<9.2f}{max_alpha_beta:<9.2f}{max_alpha_beta:<9.2f}{max_ld_delta:<9.1e}{max_ld_delta:<9.1e}{max_phi_psi:<9.2f}{max_phi_psi:<9.2f}{max_num_factors:<12d}{max_num_negatives:<12d}')
+    print(f'=========================================================================================================')
+    print(f'{"AUC":9s}{"EPOCH":9s}{"NOISE":9s}{"ALPAH":9s}{"BETA":9s}{"LAMDA":9s}{"DELTA":9s}{"PHI":9s}{"PSI":9s}{"FACTORS":12s}{"NAGATIVES":12s}')
     for e in epoch:
         for n in noise:
             for ab in alpha_beta:
@@ -262,34 +270,11 @@ if __name__ == '__main__':
                                     max_phi_psi = pp
                                     max_num_factors = nf
                                 
-                                with open('outputs\\results.pickle', 'wb') as f:
+                                with open('outputs/results.pickle', 'wb') as f:
                                     pickle.dump(results, f)
                                                         
-                                print(f'========================================')
-                                print(f'AUC: {AUC}')
-                                print(f'EPOCH: {e}')
-                                print(f'NOISE: {n}')
-                                print(f'ALPHA: {ab}')
-                                print(f'BETA: {ab}')
-                                print(f'LAMBDA: {ld}')
-                                print(f'DELTA: {ld}')
-                                print(f'PHI: {pp}')
-                                print(f'PSI: {pp}')
-                                print(f'NUM_FACTORS: {nf}')
-                                print(f'NUM_NAGATIVES: {nn}')
-                                print(f'TOTAL:{time() - start_time:.2f}s')
-                                print(f'========================================')
+                                print(f'\r{AUC:<9.4f}{e:<9d}{n:<9.2f}{ab:<9.2f}{ab:<9.2f}{ld:<9.1e}{ld:<9.1e}{pp:<9.2f}{pp:<9.2f}{nf:<12d}{nn:<12d}')
+    print(f'=========================================================================================================')
+    print(f'{max_AUC:<9.4f}{max_epoch:<9d}{max_noise:<9.2f}{max_alpha_beta:<9.2f}{max_alpha_beta:<9.2f}{max_ld_delta:<9.1e}{max_ld_delta:<9.1e}{max_phi_psi:<9.2f}{max_phi_psi:<9.2f}{max_num_factors:<12d}{max_num_negatives:<12d}')
+    print(f'=========================================================================================================')
 
-    print(f'========================================')
-    print(f'BEST AUC: {max_AUC}')
-    print(f'BEST EPOCH: {max_epoch}')
-    print(f'BEST NOISE: {max_noise}')
-    print(f'BEST ALPHA: {max_alpha_beta}')
-    print(f'BEST BETA: {max_alpha_beta}')
-    print(f'BEST LAMBDA: {max_ld_delta}')
-    print(f'BEST DELTA: {max_ld_delta}')
-    print(f'BEST PHI: {max_phi_psi}')
-    print(f'BEST PSI: {max_phi_psi}')
-    print(f'BEST NUM_FACTORS: {max_num_factors}')
-    print(f'BEST NUM_NAGATIVES: {max_num_negatives}')
-    print(f'========================================')
