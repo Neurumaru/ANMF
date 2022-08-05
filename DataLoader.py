@@ -18,7 +18,7 @@ def load_matrix(filename):
     return DiDrMat
 
 
-def load_rating_file_as_list(filename):
+def load_rating_file_as_list(filename, reverse):
     ratingList = []
     with open(filename, "r") as f:
         line = f.readline()
@@ -26,7 +26,10 @@ def load_rating_file_as_list(filename):
             line = line.strip('\n')
             arr = line.split("\t")
             user, item, rating = int(arr[0]), int(arr[1]), int(arr[2])
-            ratingList.append([user, item, rating])
+            if reverse:
+                ratingList.append([item, user, rating])
+            else:
+                ratingList.append([user, item, rating])
             line = f.readline()
     return ratingList
 
@@ -57,7 +60,7 @@ def load_item_sim_file(filename):
     return iSimMat
 
 
-def load_negative_file(filename, drug):
+def load_negative_file(filename, drug, reverse):
     negativeList = [[] for _ in range(drug)]
     with open(filename) as f:
         line = f.readline()
@@ -65,6 +68,9 @@ def load_negative_file(filename, drug):
             line = line.strip('\n')
             arr = line.split("\t")
             user, item = int(arr[0]), int(arr[1])
-            negativeList[user].append(item)
+            if reverse:
+                negativeList[item].append(user)
+            else:
+                negativeList[user].append(item)
             line = f.readline()
     return negativeList
