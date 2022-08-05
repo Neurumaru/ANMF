@@ -51,17 +51,22 @@ def load_didra(data_folder):
 
 
 def ANMF(
-        data_folder, drug, disease, user_item_reverse=False,
+        data_folder, drug, disease, reverse=False,
         num_factors=256, epochs=50, num_negatives=10,
         noise=0.3, alpha=0.5, beta=0.5, ld=0.5, delta=0.5, phi=0.5, psi=0.5, 
         return_AUC=False, save_predict=True, 
         learner='adam', learning_rate=0.001, batch_size=1024, verbose=1
     ):
+    if reverse:
+        user, item = disease, drug
+    else:
+        user, item = drug, disease
+
     pool = Pool(6)
 
-    train = pool.apply_async(load_train, args=[data_folder, user_item_reverse])
-    test = pool.apply_async(load_test, args=[data_folder, user_item_reverse])
-    neg_sample = pool.apply_async(load_negative, args=[data_folder, drug, user_item_reverse])
+    train = pool.apply_async(load_train, args=[data_folder, reverse])
+    test = pool.apply_async(load_test, args=[data_folder, reverse])
+    neg_sample = pool.apply_async(load_negative, args=[data_folder, user, reverse])
     uSimMat = pool.apply_async(load_drug_sim, args=[data_folder])
     iSimMat = pool.apply_async(load_disease_sim, args=[data_folder])
     DiDrAMat = pool.apply_async(load_didra, args=[data_folder])
@@ -76,10 +81,10 @@ def ANMF(
     pool.close()
     pool.join()
     
-    if user_item_reverse:
+    if reverse:
         uSimMat, iSimMat, DiDrAMat = iSimMat, uSimMat, DiDrAMat.T
 
-    model, prediction_model = get_model(drug, disease, num_factors, noise, ld, delta)
+    model, prediction_model = get_model(user, item, num_factors, noise, ld, delta)
     compile_model(model, learner, learning_rate, alpha, beta, phi, psi)
 
     start_time = time()
@@ -97,7 +102,7 @@ def ANMF(
         os.makedirs(f'outputs/{data_folder}', exist_ok=True)
         with open(f'outputs/{data_folder}/predict.txt', 'w') as f:
             for u, i, pred in predict:
-                if user_item_reverse:
+                if reverse:
                     f.write(f'{i}\t{u}\t{pred}\n')
                 else:
                     f.write(f'{u}\t{i}\t{pred}\n')
@@ -105,20 +110,20 @@ def ANMF(
     if return_AUC:
         Pos, Neg = set(), set()
 
-        for drug, disease, score in test:
+        for user, item, score in test:
             if score == 1:
-                Pos.add((drug, disease))
+                Pos.add((user, item))
             else:
-                Neg.add((drug, disease))
+                Neg.add((user, item))
 
         predict.sort(key=lambda x: -x[2])
 
         TP, FP = 0, 0
         TP_sum = 0
-        for drug, disease, score in predict:
-            if (drug, disease) in Pos:
+        for user, item, score in predict:
+            if (user, item) in Pos:
                 TP += 1
-            elif (drug, disease) in Neg:
+            elif (user, item) in Neg:
                 FP += 1
                 TP_sum += TP
         AUC = TP_sum / (TP * FP)
@@ -207,7 +212,7 @@ if __name__ == '__main__':
             f'Disease{i}', drug=3245, disease=6322, epochs=50,
             num_factors=512, noise=0.1, num_negatives=10,
             alpha=0.8, beta=0.8, ld=1e-4, delta=1e-4, phi=1, psi=1, 
-            return_AUC=True, save_predict=True, verbose=0, user_item_reverse=True
+            return_AUC=True, save_predict=True, verbose=0, reverse=True
         )
         print(f'Disease{i}: {AUC}')
     for i in range(10):
