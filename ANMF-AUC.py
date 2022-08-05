@@ -2,6 +2,8 @@ import os
 import pickle
 from time import time
 from progress import progress, progressEnd
+import numpy as np
+from matplotlib import pyplot as plt
 
 
 verbose = 1000
@@ -56,10 +58,12 @@ for file in os.listdir(f'outputs'):
     # progressEnd(len(lines), start_time)
     # print()
     # print(f'Sorting outputs\\{file}\\predict.txt')
-    predict.sort(key=lambda x: (-x[2]))
+    predict.sort(key=lambda x: x[2], reverse=True)
 
     TP, FP = 0, 0
     TP_sum = 0
+    TPs = []
+    FPs = []
     for drug, disease, score in predict:
         if (drug, disease) in Pos:
             TP += 1
@@ -68,6 +72,12 @@ for file in os.listdir(f'outputs'):
             TP_sum += TP
         else:
             print(f'ERROR:\t{drug}\t{disease}\t{score}')
+        TPs.append(TP)
+        FPs.append(FP)
+    TPs = np.array(TPs) / (np.max(TPs) + 1e-10)
+    FPs = np.array(FPs) / (np.max(FPs) + 1e-10)
+    plt.plot(FPs, TPs)
+    plt.show()
     # print()
     AUC = TP_sum / (TP * FP)
     print(f'{file}: {AUC}')
