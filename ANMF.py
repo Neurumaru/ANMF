@@ -23,26 +23,26 @@ batch_size = 64
 verbose = 1
 
 
-def load_train(data_folder):
+def load_train(data_folder, reverse):
     st = time()
     # print(f'Start loading train.rating')
-    result = load_rating_file_as_list(f'inputs\\{data_folder}\\train.rating')
+    result = load_rating_file_as_list(f'inputs\\{data_folder}\\train.rating', reverse)
     # print(f'End loading train.rating | TOTAL:{time() - st:.2f}s')
     return result
 
 
-def load_test(data_folder):
+def load_test(data_folder, reverse):
     st = time()
     # print(f'Start loading test.rating')
-    result = load_rating_file_as_list(f'inputs\\{data_folder}\\test.rating')
+    result = load_rating_file_as_list(f'inputs\\{data_folder}\\test.rating', reverse)
     # print(f'End loading test.rating | TOTAL:{time() - st:.2f}s')
     return result
 
 
-def load_negative(data_folder, drug):
+def load_negative(data_folder, drug, reverse):
     st = time()
     # print(f'Start loading negative.rating')
-    result = load_negative_file(f'inputs\\{data_folder}\\negative.rating', drug)
+    result = load_negative_file(f'inputs\\{data_folder}\\negative.rating', drug, reverse)
     # print(f'End loading negative.rating | TOTAL:{time() - st:.2f}s')
     return result
 
@@ -71,19 +71,8 @@ def load_didra(data_folder):
     return result
 
 
-# def load_dictionary():
-#     st = time()
-#     # print(f'Start loading drug_I2S.pickle and disease_I2S.pickle')
-#     with open('inputs\\drug_I2S.pickle', 'rb') as f:
-#         drug_I2S = pickle.load(f)
-#     with open('inputs\\disease_I2S.pickle', 'rb') as f:
-#         disease_I2S = pickle.load(f)
-#     # print(f'End loading drug_I2S.pickle and disease_I2S.pickle | TOTAL:{time() - st:.2f}s')
-#     return drug_I2S, disease_I2S
-
-
 def ANMF(
-    data_folder, drug, disease, 
+    data_folder, drug, disease, user_item_reverse=False,
     num_factors=256, epochs=50, num_negatives=10,
     noise=0.3, alpha=0.5, beta=0.5, ld=0.5, delta=0.5, phi=0.5, psi=0.5, 
     original_dataset=False, original_evaluate=False, return_AUC=False, save_predict=True
@@ -92,9 +81,9 @@ def ANMF(
     # print()
 
     pool = Pool(6)
-    train = pool.apply_async(load_train, args=[data_folder])
-    test = pool.apply_async(load_test, args=[data_folder])
-    neg_sample = pool.apply_async(load_negative, args=[data_folder, drug])
+    train = pool.apply_async(load_train, args=[data_folder, user_item_reverse])
+    test = pool.apply_async(load_test, args=[data_folder, user_item_reverse])
+    neg_sample = pool.apply_async(load_negative, args=[data_folder, drug, user_item_reverse])
     uSimMat = pool.apply_async(load_drug_sim, args=[data_folder])
     iSimMat = pool.apply_async(load_disease_sim, args=[data_folder])
     DiDrAMat = pool.apply_async(load_didra, args=[data_folder])
@@ -116,6 +105,9 @@ def ANMF(
         dataset = Dataset()
         train, test, uSimMat, iSimMat, DiDrAMat, neg_sample \
             = dataset.trainMatrix, dataset.testRatings, dataset.uSimMat, dataset.iSimMat, dataset.DiDrAMat, dataset.Sim_order
+    
+    if user_item_reverse:
+        uSimMat, iSimMat, DiDrAMat = iSimMat, uSimMat, DiDrAMat.T
 
     # print()
     # print(f'==================== Summary ({data_folder}) ====================')
@@ -200,14 +192,7 @@ def ANMF(
         return
 
 
-if __name__ == '__main__':
-    # ANMF(f'master', drug=593, disease=313, num_factors=256, epochs=50, original_evaluate=True)
-    # ANMF(f'master_original', drug=593, disease=313, num_factors=256, epochs=50, original_dataset=True, original_evaluate=True)
-    # for i in range(10):
-    #     ANMF(f'Disease{i}', drug=11219, disease=6322, num_factors=512, epochs=50)
-    # for i in range(10):
-    #     ANMF(f'Drug{i}', drug=11219, disease=6322, num_factors=512, epochs=50)
-
+def grid_search():
     epoch = [30]
     noise = [0.1, 0.2]
     alpha_beta = [0.8]
@@ -250,7 +235,6 @@ if __name__ == '__main__':
                     for pp in phi_psi:
                         for nf in num_factors:
                             for nn in num_negatives:
-                                start_time = time()
                                 if (e, n, ab, ld, pp, nf, nn) in results:
                                     continue
 
@@ -278,3 +262,23 @@ if __name__ == '__main__':
     print(f'{max_AUC:<9.4f}{max_epoch:<9d}{max_noise:<9.2f}{max_alpha_beta:<9.2f}{max_alpha_beta:<9.2f}{max_ld_delta:<9.1e}{max_ld_delta:<9.1e}{max_phi_psi:<9.2f}{max_phi_psi:<9.2f}{max_num_factors:<12d}{max_num_negatives:<12d}')
     print(f'=========================================================================================================')
 
+if __name__ == '__main__':
+    # grid_search()
+    # ANMF(f'master', drug=593, disease=313, num_factors=256, epochs=50, original_evaluate=True)
+    # ANMF(f'master_original', drug=593, disease=313, num_factors=256, epochs=50, original_dataset=True, original_evaluate=True)
+    for i in range(10):
+        AUC = ANMF(
+            f'Disease{i}', drug=3245, disease=6322, epochs=50,
+            num_factors=512, noise=0.1, num_negatives=10,
+            alpha=0.8, beta=0.8, ld=1e-4, delta=1e-4, phi=1, psi=1, 
+            return_AUC=True, save_predict=True
+        )
+        print(f'Disease{i}: {AUC}')
+    for i in range(10):
+        AUC = ANMF(
+            f'Drug{i}', drug=3245, disease=6322, epochs=50,
+            num_factors=512, noise=0.1, num_negatives=10,
+            alpha=0.8, beta=0.8, ld=1e-4, delta=1e-4, phi=1, psi=1, 
+            return_AUC=True, save_predict=True
+        )
+        print(f'Drug{i}: {AUC}')
