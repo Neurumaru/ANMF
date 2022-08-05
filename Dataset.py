@@ -1,14 +1,11 @@
-from _ast import arg
-
 import numpy as np
 import tensorflow as tf
-from concurrent.futures import ThreadPoolExecutor
-from time import time
+
 
 neg_sample = None
 
 
-def get_dataset(train, num_negatives, uSimMat, iSimMat, DiDrAMat, neg):
+def get_dataset(train, num_negatives, uSimMat, iSimMat, DiDrAMat, neg, batch_size):
     global neg_sample
     neg_sample = neg
 
@@ -30,7 +27,7 @@ def get_dataset(train, num_negatives, uSimMat, iSimMat, DiDrAMat, neg):
             }
         ),
         args=(train, num_negatives, uSimMat, iSimMat, DiDrAMat)
-    ).shuffle(4096).batch(64).prefetch(tf.data.experimental.AUTOTUNE)
+    ).shuffle(batch_size * 4).batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
 
     return dataset
 
