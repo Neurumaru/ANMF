@@ -1,22 +1,9 @@
-'''
-Created on Aug 8, 2016
-Processing datasets.
-
-@author: XinXing Yang
-'''
 import numpy as np
-
-
-def load_c_matrix(filename):
-    DiDrMat = np.loadtxt(filename)
-    # DiDrMat = DiDrMat + np.random.normal(0, 0.2, DiDrMat.shape)
-    return DiDrMat
 
 
 def load_matrix(filename):
     DiDrMat = np.loadtxt(filename)
     return DiDrMat
-
 
 def load_rating_file_as_list(filename, reverse):
     ratingList = []
@@ -33,9 +20,8 @@ def load_rating_file_as_list(filename, reverse):
             line = f.readline()
     return ratingList
 
-
-def load_user_sim_file(filename):
-    uSimMat = []
+def load_sim_file(filename):
+    SimMat = []
     with open(filename, "r") as f:
         for line in f.readlines():
             temp = []
@@ -43,22 +29,8 @@ def load_user_sim_file(filename):
             arr = line.split()
             for item in arr:
                 temp.append(float(item))
-            uSimMat.append(temp)
-    return uSimMat
-
-
-def load_item_sim_file(filename):
-    iSimMat = []
-    with open(filename, "r") as f:
-        for line in f.readlines():
-            temp = []
-            line = line.strip('\n')
-            arr = line.split()
-            for item in arr:
-                temp.append(float(item))
-            iSimMat.append(temp)
-    return iSimMat
-
+            SimMat.append(temp)
+    return SimMat
 
 def load_negative_file(filename, drug, reverse):
     negativeList = [[] for _ in range(drug)]
