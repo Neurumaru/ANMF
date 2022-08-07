@@ -207,14 +207,14 @@ if __name__ == '__main__':
     # grid_search()
     # ANMF(f'master', drug=593, disease=313, num_factors=256, epochs=50, original_evaluate=True)
     # ANMF(f'master_original', drug=593, disease=313, num_factors=256, epochs=50, original_dataset=True, original_evaluate=True)
-    for i in range(10):
+    for i in range(1, 10):
         AUC = ANMF(
             f'Disease{i}', drug=3245, disease=6322, epochs=50,
             num_factors=512, noise=0.1, num_negatives=10,
             alpha=0.8, beta=0.8, ld=1e-4, delta=1e-4, phi=1, psi=1, 
             return_AUC=True, save_predict=True, verbose=0, reverse=True
         )
-        print(f'Disease{i}: {AUC}')
+        print(f'\rDisease{i}: {AUC}')
     for i in range(10):
         AUC = ANMF(
             f'Drug{i}', drug=3245, disease=6322, epochs=50,
@@ -222,4 +222,4 @@ if __name__ == '__main__':
             alpha=0.8, beta=0.8, ld=1e-4, delta=1e-4, phi=1, psi=1, 
             return_AUC=True, save_predict=True, verbose=0
         )
-        print(f'Drug{i}: {AUC}')
+        print(f'\rDrug{i}: {AUC}')
