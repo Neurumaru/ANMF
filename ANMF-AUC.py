@@ -1,8 +1,6 @@
 import os
-import pickle
-from time import time
-from progress import progress, progressEnd
 import numpy as np
+from time import time
 from matplotlib import pyplot as plt
 
 
