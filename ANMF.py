@@ -6,6 +6,7 @@ Created on Fri Sep 14 15:35:04 2018
 """
 import gc
 import os
+import sys
 import pickle
 import tensorflow as tf
 from multiprocessing.pool import Pool
@@ -205,21 +206,22 @@ def grid_search():
 
 if __name__ == '__main__':
     # grid_search()
-    # ANMF(f'master', drug=593, disease=313, num_factors=256, epochs=50, original_evaluate=True)
-    # ANMF(f'master_original', drug=593, disease=313, num_factors=256, epochs=50, original_dataset=True, original_evaluate=True)
-    for i in range(1, 10):
-        AUC = ANMF(
-            f'Disease{i}', drug=3245, disease=6322, epochs=50,
-            num_factors=512, noise=0.1, num_negatives=10,
-            alpha=0.8, beta=0.8, ld=1e-4, delta=1e-4, phi=1, psi=1, 
-            return_AUC=True, save_predict=True, verbose=0, reverse=True
-        )
-        print(f'\rDisease{i}: {AUC}')
-    for i in range(10):
-        AUC = ANMF(
-            f'Drug{i}', drug=3245, disease=6322, epochs=50,
-            num_factors=512, noise=0.1, num_negatives=10,
-            alpha=0.8, beta=0.8, ld=1e-4, delta=1e-4, phi=1, psi=1, 
-            return_AUC=True, save_predict=True, verbose=0
-        )
-        print(f'\rDrug{i}: {AUC}')
+
+    file_path = sys.argv[1]
+    
+    if len(sys.argv) != 3:
+        print('ANMF')
+        print()
+        print('usage: python ANMF.py [Disease | Drug] [0-9]')
+        exit()
+
+    fold = sys.argv[1]
+    i = sys.argv[2]
+
+    AUC = ANMF(
+        f'{fold}{i}', drug=3245, disease=6322, epochs=50,
+        num_factors=512, noise=0.1, num_negatives=10,
+        alpha=0.8, beta=0.8, ld=1e-4, delta=1e-4, phi=1, psi=1, 
+        return_AUC=True, save_predict=True, verbose=0, reverse=True
+    )
+    print(f'\{fold}{i}: {AUC}')
