@@ -1,10 +1,11 @@
 import os
+import json
 import numpy as np
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
-import tensorflow as tf
 import keras
+import tensorflow as tf
 from keras.models import Model
 from keras.layers.core import Dense
 from keras.layers import Input, Dense
@@ -81,6 +82,30 @@ def compile_model(model, learner, learning_rate, alpha, beta, phi, psi):
         model.compile(optimizer=Adam(learning_rate=learning_rate), loss=loss, loss_weights=loss_weights)
     else:
         model.compile(optimizer=SGD(learning_rate=learning_rate), loss=loss, loss_weight=loss_weights)
+
+
+def save_weights(model, prediction_model, meta, checkpoint_dir):
+    if os.path.isdir(checkpoint_dir) is False:
+        os.makedirs(checkpoint_dir)
+    checkpoint_meta = f'{checkpoint_dir}/checkpoint.json'
+    checkpoint_model = f'{checkpoint_dir}/model.h5'
+    checkpoint_pred_model = f'{checkpoint_dir}/prediction_model.h5'
+    model.save_weights(checkpoint_model)
+    prediction_model.save_weights(checkpoint_pred_model)
+    with open(checkpoint_meta, 'w') as f:
+        json.dump(meta, f)
+
+
+def load_weights(model, prediction_model, meta, checkpoint_dir):
+    checkpoint_meta = f'{checkpoint_dir}/checkpoint.json'
+    checkpoint_model = f'{checkpoint_dir}/model.h5'
+    checkpoint_pred_model = f'{checkpoint_dir}/prediction_model.h5'
+    if os.path.isfile(checkpoint_meta) and os.path.isfile(checkpoint_model) and os.path.isfile(checkpoint_pred_model):
+        model.load_weights(checkpoint_model)
+        prediction_model.load_weights(checkpoint_pred_model)
+        with open(checkpoint_meta, 'r') as f:
+            meta = json.load(f)
+    return model, prediction_model, meta
 
 
 def fit_model_one_epoch(model, dataset, batch_size, verbose=1):
