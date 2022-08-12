@@ -39,3 +39,27 @@ def predict_model(model, test, uSimMat, iSimMat, DiDrAMat, batch_size=1024, verb
 
     u, i, r = zip(*test)
     return list(zip(u, i, np.array(result).reshape(-1)))
+
+
+def calculate_AUC(y_true, y_pred):
+    Pos, Neg = set(), set()
+
+    for user, item, score in y_true:
+        if score == 1:
+            Pos.add((user, item))
+        else:
+            Neg.add((user, item))
+
+    y_pred.sort(key=lambda x: -x[2])
+
+    TP, FP = 0, 0
+    TP_sum = 0
+    for user, item, score in y_pred:
+        if (user, item) in Pos:
+            TP += 1
+        elif (user, item) in Neg:
+            FP += 1
+            TP_sum += TP
+    AUC = TP_sum / (TP * FP)
+
+    return AUC
