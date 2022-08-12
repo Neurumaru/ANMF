@@ -22,7 +22,7 @@ def integrate(cv):
 
     with open(f'outputs/ANMF_{cv}.txt', 'w') as f:
         for drug, disease, score in predicts:
-            f.write(f'{drug_I2S[drug]}\t{disease_I2S[disease]}\t{score}')
+            f.write(f'{drug_I2S[drug]}\t{disease_I2S[disease]}\t{score}\n')
 
 integrate('disease')
 integrate('drug')
