@@ -1,1 +1,2 @@
-for %%d in (3, 4, 5, 6, 7, 8, 9) do python ANMF.py Disease %%d
+for %%d in (0) do python ANMF.py Disease %%d
+for %%d in (0) do python ANMF.py Drug %%d
