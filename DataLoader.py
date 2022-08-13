@@ -2,7 +2,7 @@ import numpy as np
 
 
 def load_matrix(filename):
-    DiDrMat = np.loadtxt(filename)
+    DiDrMat = np.loadtxt(filename, dtype=np.float32)
     return DiDrMat
 
 def load_rating_file_as_list(filename, reverse):
@@ -20,20 +20,8 @@ def load_rating_file_as_list(filename, reverse):
             line = f.readline()
     return ratingList
 
-def load_sim_file(filename):
-    SimMat = []
-    with open(filename, "r") as f:
-        for line in f.readlines():
-            temp = []
-            line = line.strip('\n')
-            arr = line.split()
-            for item in arr:
-                temp.append(float(item))
-            SimMat.append(temp)
-    return SimMat
-
-def load_negative_file(filename, drug, reverse):
-    negativeList = [[] for _ in range(drug)]
+def load_negative_file(filename, user, item, reverse):
+    negativeList = [[] for _ in range(user)]
     with open(filename) as f:
         line = f.readline()
         while line is not None and line != "":
@@ -45,4 +33,11 @@ def load_negative_file(filename, drug, reverse):
             else:
                 negativeList[user].append(item)
             line = f.readline()
+    for u in range(user):
+        if item < 32768:
+            negativeList[u] = np.array(negativeList[u], dtype=np.int16)
+        elif item < 1073741824:
+            negativeList[u] = np.array(negativeList[u], dtype=np.int32)
+        else:
+            negativeList[u] = np.array(negativeList[u], dtype=np.int64)
     return negativeList

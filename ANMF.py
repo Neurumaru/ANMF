@@ -29,8 +29,8 @@ def load_test(data_folder, reverse):
     return result
 
 
-def load_negative(data_folder, drug, reverse):
-    result = load_negative_file(f'inputs/{data_folder}/negative.rating', drug, reverse)
+def load_negative(data_folder, user, item, reverse):
+    result = load_negative_file(f'inputs/{data_folder}/negative.rating', user, item, reverse)
     return result
 
 
@@ -194,7 +194,7 @@ def ANMF(
 
     train = pool.apply_async(load_train, args=[data_folder, reverse])
     test = pool.apply_async(load_test, args=[data_folder, reverse])
-    neg_sample = pool.apply_async(load_negative, args=[data_folder, user, reverse])
+    neg_sample = pool.apply_async(load_negative, args=[data_folder, user, item, reverse])
     uSimMat = pool.apply_async(load_drug_sim, args=[data_folder])
     iSimMat = pool.apply_async(load_disease_sim, args=[data_folder])
     DiDrAMat = pool.apply_async(load_didra, args=[data_folder])
