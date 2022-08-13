@@ -1,8 +1,11 @@
 import numpy as np
 import tensorflow as tf
 
+from time import time
+from progress import progress
 
-def predict_model(model, test, uSimMat, iSimMat, DiDrAMat, batch_size=1024, verbose=10):
+
+def predict_model(model, test, uSimMat, iSimMat, DiDrAMat, batch_size=1024):
     dataset = {
         "u_input": [],
         "u_input_c": [],
@@ -10,7 +13,10 @@ def predict_model(model, test, uSimMat, iSimMat, DiDrAMat, batch_size=1024, verb
         "i_input_c": []
     }
     result = list()
-    for idx, (u, i, r) in enumerate(test):
+    start_time = time()
+    for idx, (u, i, _) in enumerate(test):
+        if idx % 10 == 0:
+            progress(idx, len(test), start_time)
 
         user_input = np.array(uSimMat[u])
         item_input = np.array(iSimMat[i])
