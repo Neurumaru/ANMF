@@ -27,11 +27,11 @@ def load_negative_file(filename, user, item, reverse):
         while line is not None and line != "":
             line = line.strip('\n')
             arr = line.split("\t")
-            user, item = int(arr[0]), int(arr[1])
+            u, i = int(arr[0]), int(arr[1])
             if reverse:
-                negativeList[item].append(user)
+                negativeList[i].append(u)
             else:
-                negativeList[user].append(item)
+                negativeList[u].append(i)
             line = f.readline()
     for u in range(user):
         if item < 32768:
