@@ -8,6 +8,8 @@ for file in os.listdir(f'outputs'):
         continue
     if file == 'ANMF_drug.txt':
         continue
+    if file == 'desktop.ini':
+        continue
 
     y_true = []
     with open(f'inputs\\{file}\\test.rating', 'r') as f:
@@ -22,4 +24,4 @@ for file in os.listdir(f'outputs'):
             predict.append((int(drug), int(disease), float(score)))
 
     AUC = calculate_AUC(y_true, predict)
-    print(f'{file}: {AUC}')
+    print(f'{file}: {AUC:.4f}')
